@@ -9,7 +9,7 @@ name: PR Merge Scheduler
 on: 
     schedule:
         # run the workflow everyday at 6:30AM(UTC) i.e 2:30AM(EST)
-        - cron: '*/10 * * * *'
+        - cron: '*/30 * * * *'
 
 jobs:
     schedule_merge:
