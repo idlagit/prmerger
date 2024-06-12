@@ -30,7 +30,7 @@ jobs:
         steps:
             - name: Get list of open pr
               run: |
-                #clear out the file content if already exist and retrive a list of open pull requests and write output to a file
+                # clear out the file content if already exist and retrive a list of open pull requests and write output to a file
                 > $OPEN_PR_FILE
 
                 # retrive a list of open pull requests and write output to a fil
@@ -41,13 +41,13 @@ jobs:
                 # sanity check that file is not empty or missing
                 if [ ! -s "$OPEN_PR_FILE" ]; then
                     echo "Input file '$OPEN_PR_FILE' is empty or missing"
-                    exit 1
+                    exit 0
                 fi
                 
                 # clear out the file content if already exist
                 > $MATCHED_PR_FILE
                 
-                # filter open pr's that are 'APPROVED' and contain the trigger phrase in title
+                # filter for open pr's that are 'APPROVED' and contain the trigger phrase in title
                 counter=1
                 while IFS= read -r line; do
                     review_decision=$(echo "$line" | awk '{print $2}') 
@@ -61,13 +61,18 @@ jobs:
                 done < $OPEN_PR_FILE 
                 echo ""
 
+                if [ ! -s $MATCHED_PR_FILE ]; then
+                    echo "No matching pull request found. Exiting..."
+                    exit 0
+                fi
+
             - name: Get list of pr with all checks passed
               run: |
-                # sanity check that file is not empty or missing
-                if [ ! -s "$MATCHED_PR_FILE" ]; then
-                    echo "Input file '$MATCHED_PR_FILE' is empty or missing"
-                    exit 1
-                fi
+                # # sanity check that file is not empty or missing
+                # if [ ! -s "$MATCHED_PR_FILE" ]; then
+                #     echo "Input file '$MATCHED_PR_FILE' is empty or missing"
+                #     exit 0
+                # fi
 
                 # clear out the file content if already exist
                 > $CHECKS_RESULT_FILE
@@ -97,14 +102,19 @@ jobs:
                     fi
                     echo ""
                 done < $MATCHED_PR_FILE
-            
+                
+                if [ ! -s "$PASSED_PR_FILE" ]; then
+                    echo "No pull request has passed all checks. Exiting..."
+                    exit 0
+                fi
+
             - name: merge passed pull requests
               run: |
                 # sanity check that file is not empty or missing
-                if [ ! -s "$PASSED_PR_FILE" ]; then
-                    echo "Input file '$PASSED_PR_FILE' is empty or missing"
-                    exit 1
-                    fi
+                # if [ ! -s "$PASSED_PR_FILE" ]; then
+                #     echo "Input file '$PASSED_PR_FILE' is empty or missing"
+                #     exit 0
+                # fi
                 
                 # clear out the file content if already exist
                 > $MERGED_PR_FILE
@@ -129,4 +139,17 @@ jobs:
                         echo "PR #$pr_number" >> $UNMERGED_PR_FILE
                         gh pr comment $pr_number --body "Failed scheduled merge attempt from $TRIGGER_PHRASE"
                     fi
+
+                    # print outs for informational purposes
+                    if [ ! -s "$MERGED_PR_FILE" ]; then
+                        echo "The following PR's were merged: "
+                        cat $MERGED_PR_FILE
+                    fi
+
+                    if [ ! -s "$MERGED_PR_FILE" ]; then
+                        echo "The following PR's were not merged: "
+                        cat $UMERGED_PR_FILE
+                    fi                   
+                    echo ""
+                    
                 done < $PASSED_PR_FILE
