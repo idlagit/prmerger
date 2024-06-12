@@ -16,6 +16,7 @@ jobs:
         name: schedule merge
         runs-on: ubuntu-latest
         env:
+            GH_TOKEN: ${{ github.token }}
             # Defining enviroment variables for the job
             TARGET_REPO: idlagit/prmerger
             TRIGGER_PHRASE: '@schedule-merge'
