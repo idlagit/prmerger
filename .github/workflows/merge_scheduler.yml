@@ -110,13 +110,15 @@ jobs:
                 # merge the pull requests that passed all checks and validate merge success
                 while IFS= read -r line; do
                     pr_number=$(echo "$line" | awk '{print $1}')
-                
+
+                    set +e
                     echo "Attempting to merge pull request #$pr_number....."
                     gh pr merge $pr_number --repo $TARGET_REPO --merge || echo "Skipping to next pr due to merge failure"
+                    set -e
                     
                     # checks status to validate that pr is actually merged
                     pr_status=$(gh pr view $pr_number --json state | jq -r '.state')
-                
+                    
                     if [ $pr_status == "MERGED" ]; then
                         echo "Pull request #$pr_number sucessfully merged. Current State is '$pr_status'"
                         echo "PR #$pr_number" >> $MERGED_PR_FILE
