@@ -9,7 +9,7 @@ name: PR Merge Scheduler
 on: 
     schedule:
         # run the workflow everyday at 6:30AM(UTC) i.e 2:30AM(EST)
-        - cron: '*/10 * * * *'
+        - cron: '*/30 * * * *'
 
 jobs:
     schedule_merge:
@@ -30,24 +30,24 @@ jobs:
         steps:
             - name: Get list of open pr
               run: |
-                #clear out the file content if already exist and retrive a list of open pull requests and write output to a file
+                # clear out the file content if already exist and retrive a list of open pull requests and write output to a file
                 > $OPEN_PR_FILE
 
                 # retrive a list of open pull requests and write output to a fil
                 gh pr list --repo $TARGET_REPO --state open --json number,reviewDecision,title --jq '.[] | "\(.number) \(.reviewDecision) \(.title)"' > $OPEN_PR_FILE
 
+                if [ ! -s "$OPEN_PR_FILE" ]; then
+                    echo "No open pull requests were found"
+                    exit 0
+                else
+                    echo "**** The following open pull request were found: "
+                    cat $OPEN_PR_FILE
+                fi
+
+                
             - name: Get list of approved pr with matching trigger_phrase
               run: |
-                # sanity check that file is not empty or missing
-                if [ ! -s "$OPEN_PR_FILE" ]; then
-                    echo "Input file '$OPEN_PR_FILE' is empty or missing"
-                    exit 1
-                fi
-                
-                # clear out the file content if already exist
-                > $MATCHED_PR_FILE
-                
-                # filter open pr's that are 'APPROVED' and contain the trigger phrase in title
+                # filter for open pr's that are 'APPROVED' and contain the trigger phrase in title
                 counter=1
                 while IFS= read -r line; do
                     review_decision=$(echo "$line" | awk '{print $2}') 
@@ -61,18 +61,17 @@ jobs:
                 done < $OPEN_PR_FILE 
                 echo ""
 
-            - name: Get list of pr with all checks passed
-              run: |
-                # sanity check that file is not empty or missing
-                if [ ! -s "$MATCHED_PR_FILE" ]; then
-                    echo "Input file '$MATCHED_PR_FILE' is empty or missing"
-                    exit 1
+                if [ ! -s $MATCHED_PR_FILE ]; then
+                    echo "No matching pull request found. Exiting..."
+                    exit 0
+                else
+                    echo "***** THe following pull request were matched: "
+                    cat $MATCHED_PR_FILE
                 fi
 
-                # clear out the file content if already exist
-                > $CHECKS_RESULT_FILE
-                > $PASSED_PR_FILE
-
+            - name: Get list of pr with all checks passed
+              id: checkspass
+              run: |
                 # Validate if all checks for each PR have passed
                 while IFS= read -r line; do
                     # extract pull request number from first position of each line
@@ -97,19 +96,19 @@ jobs:
                     fi
                     echo ""
                 done < $MATCHED_PR_FILE
-            
-            - name: merge passed pull requests
-              run: |
-                # sanity check that file is not empty or missing
+                
                 if [ ! -s "$PASSED_PR_FILE" ]; then
-                    echo "Input file '$PASSED_PR_FILE' is empty or missing"
+                    echo "***** No pull request passed all checks. Exiting..."
+                    exit 0
+                else
+                    echo "***** The following pull request passed all checks: "
+                    cat $PASSED_PR_FILE
                     exit 1
-                    fi
-                
-                # clear out the file content if already exist
-                > $MERGED_PR_FILE
-                > $UNMERGED_PR_FILE
-                
+                fi
+
+            - name: merge passing pull requests
+              if: steps.checkspass.outcome == "failure"
+              run: |
                 # merge the pull requests that passed all checks and validate merge success
                 while IFS= read -r line; do
                     pr_number=$(echo "$line" | awk '{print $1}')
@@ -129,4 +128,17 @@ jobs:
                         echo "PR #$pr_number" >> $UNMERGED_PR_FILE
                         gh pr comment $pr_number --body "Failed scheduled merge attempt from $TRIGGER_PHRASE"
                     fi
+
+                    # output for informational purposes
+                    if [ ! -s "$MERGED_PR_FILE" ]; then
+                        echo "***** The following PR's were merged: "
+                        cat $MERGED_PR_FILE
+                    fi
+
+                    if [ ! -s "$MERGED_PR_FILE" ]; then
+                        echo "***** The following PR's were not merged: "
+                        cat $UMERGED_PR_FILE
+                    fi                   
+                    echo ""
+                    
                 done < $PASSED_PR_FILE
