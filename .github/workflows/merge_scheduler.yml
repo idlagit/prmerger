@@ -112,7 +112,7 @@ jobs:
                     pr_number=$(echo "$line" | awk '{print $1}')
                 
                     echo "Attempting to merge pull request #$pr_number....."
-                    gh pr merge $pr_number --repo $TARGET_REPO --merge
+                    gh pr merge $pr_number --repo $TARGET_REPO --merge || echo "Skipping to next pr due to merge failure"
                     
                     # checks status to validate that pr is actually merged
                     pr_status=$(gh pr view $pr_number --json state | jq -r '.state')
