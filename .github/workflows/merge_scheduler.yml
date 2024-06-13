@@ -9,7 +9,7 @@ name: PR Merge Scheduler
 on: 
     schedule:
         # run the workflow everyday at 6:30AM(UTC) i.e 2:30AM(EST)
-        - cron: '*/30 * * * *'
+        - cron: '*/180 * * * *'
 
 jobs:
     schedule_merge:
@@ -38,13 +38,12 @@ jobs:
 
                 if [ ! -s "$OPEN_PR_FILE" ]; then
                     echo "No open pull requests were found"
-                    exit 0
+                    exit 1
                 else
                     echo "**** The following open pull request were found: "
                     cat $OPEN_PR_FILE
                 fi
 
-                
             - name: Get list of approved pr with matching trigger_phrase
               run: |
                 # filter for open pr's that are 'APPROVED' and contain the trigger phrase in title
@@ -63,7 +62,7 @@ jobs:
 
                 if [ ! -s $MATCHED_PR_FILE ]; then
                     echo "No matching pull request found. Exiting..."
-                    exit 0
+                    exit 1
                 else
                     echo "***** THe following pull request were matched: "
                     cat $MATCHED_PR_FILE
@@ -99,15 +98,14 @@ jobs:
                 
                 if [ ! -s "$PASSED_PR_FILE" ]; then
                     echo "***** No pull request passed all checks. Exiting..."
-                    exit 0
+                    exit 1
                 else
                     echo "***** The following pull request passed all checks: "
                     cat $PASSED_PR_FILE
-                    exit 1
                 fi
 
             - name: merge passing pull requests
-              if: steps.checkspass.outcome == "failure"
+              # if: steps.checkspass.outcome == 'success'
               run: |
                 # merge the pull requests that passed all checks and validate merge success
                 while IFS= read -r line; do
