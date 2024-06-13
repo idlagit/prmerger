@@ -107,7 +107,7 @@ jobs:
                 fi
 
             - name: merge passing pull requests
-              if: steps.checkspass.outcome == "failure"
+              if: steps.checkspass.outcome == 'failure'
               run: |
                 # merge the pull requests that passed all checks and validate merge success
                 while IFS= read -r line; do
