@@ -70,6 +70,7 @@ jobs:
                 fi
 
             - name: Get list of pr with all checks passed
+              id: checkspass
               run: |
                 # Validate if all checks for each PR have passed
                 while IFS= read -r line; do
@@ -102,9 +103,11 @@ jobs:
                 else
                     echo "***** The following pull request passed all checks: "
                     cat $PASSED_PR_FILE
+                    exit 1
                 fi
 
             - name: merge passing pull requests
+              if: steps.checkspass.outcome == "failure"
               run: |
                 # merge the pull requests that passed all checks and validate merge success
                 while IFS= read -r line; do
