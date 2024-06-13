@@ -1,0 +1,142 @@
+#Purpose: To schedule the merging of open pull request to off-peak hours. 
+#Requirements:  The following conditions must be satisfied for merging to occur.
+    #1. pull request have a review status of 'APPROVE'
+    #2. pull request title contains a trigger_phrase as set below
+    #3. pull request status checks are all green (paased)
+
+name: PR Merge Scheduler
+
+on: 
+    schedule:
+        # run the workflow everyday at 6:30AM(UTC) i.e 2:30AM(EST)
+        - cron: '*/180 * * * *'
+
+jobs:
+    schedule_merge:
+        name: schedule merge
+        runs-on: ubuntu-latest
+        env:
+            GH_TOKEN: ${{ github.token }}
+            # Defining enviroment variables for the job
+            TARGET_REPO: idlagit/prmerger
+            TRIGGER_PHRASE: '@schedule-merge'
+            OPEN_PR_FILE: file_open_prs.txt
+            MATCHED_PR_FILE: file_matched_prs.txt
+            CHECKS_RESULT_FILE: file_checks_result.txt
+            PASSED_PR_FILE: file_passed_prs.txt
+            MERGED_PR_FILE: file_merged_prs.txt
+            UNMERGED_PR_FILE: file_unmerged_prs.txt
+ 
+        steps:
+            - name: Get list of open pr
+              run: |
+                # clear out the file content if already exist and retrive a list of open pull requests and write output to a file
+                > $OPEN_PR_FILE
+
+                # retrive a list of open pull requests and write output to a fil
+                gh pr list --repo $TARGET_REPO --state open --json number,reviewDecision,title --jq '.[] | "\(.number) \(.reviewDecision) \(.title)"' > $OPEN_PR_FILE
+
+                if [ ! -s "$OPEN_PR_FILE" ]; then
+                    echo "No open pull requests were found"
+                    exit 1
+                else
+                    echo "**** The following open pull request were found: "
+                    cat $OPEN_PR_FILE
+                fi
+
+            - name: Get list of approved pr with matching trigger_phrase
+              run: |
+                # filter for open pr's that are 'APPROVED' and contain the trigger phrase in title
+                counter=1
+                while IFS= read -r line; do
+                    review_decision=$(echo "$line" | awk '{print $2}') 
+                    if [ "$review_decision" == "APPROVED" ] && [[ "$line" == *"$TRIGGER_PHRASE"* ]]; then
+                        echo "$line" >> $MATCHED_PR_FILE
+                        echo "Match found on line $counter"   
+                    else
+                        echo "No match found on line $counter"  
+                    fi
+                    counter=$((counter+1))
+                done < $OPEN_PR_FILE 
+                echo ""
+
+                if [ ! -s $MATCHED_PR_FILE ]; then
+                    echo "No matching pull request found. Exiting..."
+                    exit 1
+                else
+                    echo "***** THe following pull request were matched: "
+                    cat $MATCHED_PR_FILE
+                fi
+
+            - name: Get list of pr with all checks passed
+              id: checkspass
+              run: |
+                # Validate if all checks for each PR have passed
+                while IFS= read -r line; do
+                    # extract pull request number from first position of each line
+                    pr_number=$(echo "$line" | awk '{print $1}')
+                    
+                    # Get checks output from github cli in json format
+                    echo "Processing pull request #$pr_number: $pr_title"
+                    CHECKS=$(gh pr checks $pr_number --repo $TARGET_REPO --json workflow,state)
+                    echo $CHECKS | jq -c '.[]'
+
+                    # output check result to file for debugging
+                    echo "pull request #$pr_number results:" >> $CHECKS_RESULT_FILE
+                    echo $CHECKS | jq -c '.[]' >> $CHECKS_RESULT_FILE
+                    echo "" >> $CHECKS_RESULT_FILE
+
+                    # validate if all checks have a state value of 'success', then declares the pr as 'passed'
+                    if echo "$CHECKS" | jq -e 'map(select(.state != "SUCCESS")) | length > 0' > /dev/null; then
+                        echo "Not All Checks Passed for pull request #$pr_number"
+                    else
+                        echo "All checks passed for pull request #$pr_number"
+                        echo $line >> $PASSED_PR_FILE
+                    fi
+                    echo ""
+                done < $MATCHED_PR_FILE
+                
+                if [ ! -s "$PASSED_PR_FILE" ]; then
+                    echo "***** No pull request passed all checks. Exiting..."
+                    exit 1
+                else
+                    echo "***** The following pull request passed all checks: "
+                    cat $PASSED_PR_FILE
+                fi
+
+            - name: merge passing pull requests
+              # if: steps.checkspass.outcome == 'success'
+              run: |
+                # merge the pull requests that passed all checks and validate merge success
+                while IFS= read -r line; do
+                    pr_number=$(echo "$line" | awk '{print $1}')
+                
+                    echo "Attempting to merge pull request #$pr_number....."
+                    gh pr merge $pr_number --repo $TARGET_REPO --merge
+                    
+                    # checks status to validate that pr is actually merged
+                    pr_status=$(gh pr view $pr_number --json state | jq -r '.state')
+                
+                    if [ $pr_status == "MERGED" ]; then
+                        echo "Pull request #$pr_number sucessfully merged. Current State is '$pr_status'"
+                        echo "PR #$pr_number" >> $MERGED_PR_FILE
+                        gh pr comment $pr_number --body "Schedule merge by $TRIGGER_PHRASE"
+                    else
+                        echo "Unable to merge #$pr_number. Current State is '$pr_status'"
+                        echo "PR #$pr_number" >> $UNMERGED_PR_FILE
+                        gh pr comment $pr_number --body "Failed scheduled merge attempt from $TRIGGER_PHRASE"
+                    fi
+
+                    # output for informational purposes
+                    if [ ! -s "$MERGED_PR_FILE" ]; then
+                        echo "***** The following PR's were merged: "
+                        cat $MERGED_PR_FILE
+                    fi
+
+                    if [ ! -s "$MERGED_PR_FILE" ]; then
+                        echo "***** The following PR's were not merged: "
+                        cat $UMERGED_PR_FILE
+                    fi                   
+                    echo ""
+                    
+                done < $PASSED_PR_FILE
