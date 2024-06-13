@@ -9,7 +9,7 @@ name: PR Merge Scheduler
 on: 
     schedule:
         # run the workflow everyday at 6:30AM(UTC) i.e 2:30AM(EST)
-        - cron: '*/180 * * * *'
+        - cron: '*/15 * * * *'
 
 jobs:
     schedule_merge:
@@ -126,17 +126,17 @@ jobs:
                         echo "PR #$pr_number" >> $UNMERGED_PR_FILE
                         gh pr comment $pr_number --body "Failed scheduled merge attempt from $TRIGGER_PHRASE"
                     fi
-
-                    # output for informational purposes
-                    if [ ! -s "$MERGED_PR_FILE" ]; then
-                        echo "***** The following PR's were merged: "
-                        cat $MERGED_PR_FILE
-                    fi
-
-                    if [ ! -s "$MERGED_PR_FILE" ]; then
-                        echo "***** The following PR's were not merged: "
-                        cat $UMERGED_PR_FILE
-                    fi                   
-                    echo ""
                     
                 done < $PASSED_PR_FILE
+                echo ""
+                
+                # output for informational purposes
+                if [ ! -s "$MERGED_PR_FILE" ]; then
+                    echo "***** The following PR's were merged: "
+                    cat $MERGED_PR_FILE
+                fi
+
+                if [ ! -s "$MERGED_PR_FILE" ]; then
+                    echo "***** The following PR's were not merged: "
+                    cat $UMERGED_PR_FILE
+                fi                   
