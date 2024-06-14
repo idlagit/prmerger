@@ -122,6 +122,7 @@ jobs:
                 # merge the pull requests that passed all checks and validate merge success
                 while IFS= read -r line; do
                     pr_number=$(echo "$line" | awk '{print $1}')
+                    echo "$pr_number"
 
                     set +e
                     echo "Attempting to merge pull request #$pr_number....."
