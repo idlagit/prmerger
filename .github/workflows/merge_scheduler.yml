@@ -114,11 +114,12 @@ jobs:
                     set +e
                     echo "Attempting to merge pull request #$pr_number....."
                     gh pr merge $pr_number --repo $TARGET_REPO --merge || echo "Skipping to next pr due to merge failure"
-                    set -e
+                    
                     
                     # checks status to validate that pr is actually merged
                     pr_status=$(gh pr view $pr_number --json state | jq -r '.state')
                     echo "PR #$pr_number is $pr_status"
+                    set -e
                     
                     # if [ $pr_status == "MERGED" ]; then
                     #     echo "Pull request #$pr_number sucessfully merged. Current State is '$pr_status'"
