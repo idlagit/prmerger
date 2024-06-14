@@ -119,7 +119,13 @@ jobs:
                     # checks status to validate that pr is actually merged
                     pr_status=$(gh pr view $pr_number --json state | jq -r '.state')
                     echo "PR #$pr_number is $pr_status"
+                    if [ ! -z "$pr_status" ]; then
+                        echo "PR #$pr_number" >> $MERGED_PR_FILE
+                    else
+                        echo "PR #$pr_number" >> $UNMERGED_PR_FILE
+                    fi
                     set -e
+                    echo ""
                     
                     # if [ $pr_status == "MERGED" ]; then
                     #     echo "Pull request #$pr_number sucessfully merged. Current State is '$pr_status'"
