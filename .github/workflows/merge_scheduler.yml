@@ -112,13 +112,11 @@ jobs:
                     pr_number=$(echo "$line" | awk '{print $1}')
 
                     set +e
-                    gh auth status
                     echo "Attempting to merge pull request #$pr_number....."
                     gh pr merge $pr_number -b "mergedby $TRIGGER_PHRASE" --merge || echo "Skipping to next pr due to merge failure"
                     set -e
                     
                     # checks status to validate that pr is actually merged
-                    gh auth status
                     pr_status=$(gh pr view $pr_number --json state | jq -r '.state')
                     
                     if [ $pr_status == "MERGED" ]; then
