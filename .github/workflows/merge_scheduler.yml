@@ -132,8 +132,8 @@ jobs:
                     echo "Merge Validation is: $merge_validation"
 
                     if [ -z $merge_validation ]; then
-                        echo "Unable to merge pull request #$pr_number
-                        echo "$pr_number" >> $UNMERGED_PR_FILE
+                        echo "Unable to merge pull request #$pr_number"
+                        echo $pr_number >> $UNMERGED_PR_FILE
                         cat $UNMERGED_PR_FILE
                     fi
                     echo ""
