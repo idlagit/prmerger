@@ -118,27 +118,28 @@ jobs:
                     
                     # checks status to validate that pr is actually merged
                     pr_status=$(gh pr view $pr_number --json state | jq -r '.state')
+                    echo "PR #$pr_number is $pr_status"
                     
-                    if [ $pr_status == "MERGED" ]; then
-                        echo "Pull request #$pr_number sucessfully merged. Current State is '$pr_status'"
-                        echo "PR #$pr_number" >> $MERGED_PR_FILE
-                        gh pr comment $pr_number --body "Schedule merge by $TRIGGER_PHRASE"
-                    else
-                        echo "Unable to merge #$pr_number. Current State is '$pr_status'"
-                        echo "PR #$pr_number" >> $UNMERGED_PR_FILE
-                        gh pr comment $pr_number --body "Failed scheduled merge attempt from $TRIGGER_PHRASE"
-                    fi
+                    # if [ $pr_status == "MERGED" ]; then
+                    #     echo "Pull request #$pr_number sucessfully merged. Current State is '$pr_status'"
+                    #     echo "PR #$pr_number" >> $MERGED_PR_FILE
+                    #     gh pr comment $pr_number --body "Schedule merge by $TRIGGER_PHRASE"
+                    # else
+                    #     echo "Unable to merge #$pr_number. Current State is '$pr_status'"
+                    #     echo "PR #$pr_number" >> $UNMERGED_PR_FILE
+                    #     gh pr comment $pr_number --body "Failed scheduled merge attempt from $TRIGGER_PHRASE"
+                    # fi
                     
                 done < $PASSED_PR_FILE
                 echo ""
                 
                 # output for informational purposes
-                if [ ! -s "$MERGED_PR_FILE" ]; then
-                    echo "***** The following PR's were merged: "
-                    cat $MERGED_PR_FILE
-                fi
+                # if [ ! -s "$MERGED_PR_FILE" ]; then
+                #     echo "***** The following PR's were merged: "
+                #     cat $MERGED_PR_FILE
+                # fi
 
-                if [ ! -s "$MERGED_PR_FILE" ]; then
-                    echo "***** The following PR's were not merged: "
-                    cat $UMERGED_PR_FILE
-                fi                   
+                # if [ ! -s "$MERGED_PR_FILE" ]; then
+                #     echo "***** The following PR's were not merged: "
+                #     cat $UMERGED_PR_FILE
+                # fi                   
