@@ -9,7 +9,7 @@ name: PR Merge Scheduler
 on: 
     schedule:
         # run the workflow everyday at 6:30AM(UTC) i.e 2:30AM(EST)
-        - cron: '*/180 * * * *'
+        - cron: '*/15 * * * *'
 
 jobs:
     schedule_merge:
@@ -18,7 +18,7 @@ jobs:
         env:
             GH_TOKEN: ${{ github.token }}
             # Defining enviroment variables for the job
-            TARGET_REPO: idlagit/prmerger
+            TARGET_REPO: https://github.com/idlagit/prmerger.git
             TRIGGER_PHRASE: '@schedule-merge'
             OPEN_PR_FILE: file_open_prs.txt
             MATCHED_PR_FILE: file_matched_prs.txt
@@ -110,33 +110,36 @@ jobs:
                 # merge the pull requests that passed all checks and validate merge success
                 while IFS= read -r line; do
                     pr_number=$(echo "$line" | awk '{print $1}')
-                
+
+                    set +e
                     echo "Attempting to merge pull request #$pr_number....."
-                    gh pr merge $pr_number --repo $TARGET_REPO --merge
+                    gh pr merge $pr_number --repo $TARGET_REPO --merge || echo "Skipping to next pr due to merge failure"
+                    set -e
                     
                     # checks status to validate that pr is actually merged
                     pr_status=$(gh pr view $pr_number --json state | jq -r '.state')
-                
-                    if [ $pr_status == "MERGED" ]; then
-                        echo "Pull request #$pr_number sucessfully merged. Current State is '$pr_status'"
-                        echo "PR #$pr_number" >> $MERGED_PR_FILE
-                        gh pr comment $pr_number --body "Schedule merge by $TRIGGER_PHRASE"
-                    else
-                        echo "Unable to merge #$pr_number. Current State is '$pr_status'"
-                        echo "PR #$pr_number" >> $UNMERGED_PR_FILE
-                        gh pr comment $pr_number --body "Failed scheduled merge attempt from $TRIGGER_PHRASE"
-                    fi
-
-                    # output for informational purposes
-                    if [ ! -s "$MERGED_PR_FILE" ]; then
-                        echo "***** The following PR's were merged: "
-                        cat $MERGED_PR_FILE
-                    fi
-
-                    if [ ! -s "$MERGED_PR_FILE" ]; then
-                        echo "***** The following PR's were not merged: "
-                        cat $UMERGED_PR_FILE
-                    fi                   
-                    echo ""
+                    echo "PR #$pr_number is $pr_status"
+                    
+                    # if [ $pr_status == "MERGED" ]; then
+                    #     echo "Pull request #$pr_number sucessfully merged. Current State is '$pr_status'"
+                    #     echo "PR #$pr_number" >> $MERGED_PR_FILE
+                    #     gh pr comment $pr_number --body "Schedule merge by $TRIGGER_PHRASE"
+                    # else
+                    #     echo "Unable to merge #$pr_number. Current State is '$pr_status'"
+                    #     echo "PR #$pr_number" >> $UNMERGED_PR_FILE
+                    #     gh pr comment $pr_number --body "Failed scheduled merge attempt from $TRIGGER_PHRASE"
+                    # fi
                     
                 done < $PASSED_PR_FILE
+                echo ""
+                
+                # output for informational purposes
+                # if [ ! -s "$MERGED_PR_FILE" ]; then
+                #     echo "***** The following PR's were merged: "
+                #     cat $MERGED_PR_FILE
+                # fi
+
+                # if [ ! -s "$MERGED_PR_FILE" ]; then
+                #     echo "***** The following PR's were not merged: "
+                #     cat $UMERGED_PR_FILE
+                # fi                   
