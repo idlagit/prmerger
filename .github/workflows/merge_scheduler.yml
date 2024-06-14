@@ -133,10 +133,10 @@ jobs:
                     
                     if [ ! -z "$merge_validation" ]; then
                         echo "Pull request #pr_number is successfully merged"
-                        echo 'PR #"$pr_number"' >> $MERGED_PR_FILE
+                        echo "PR #${pr_number}" >> $MERGED_PR_FILE
                     else
                         echo "Unable to merge pull request #$pr_number
-                        echo 'PR #"$pr_number"' >> $UNMERGED_PR_FILE
+                        echo "PR #{$pr_number}" >> $UNMERGED_PR_FILE
                     fi
                     set -e
                     echo ""
