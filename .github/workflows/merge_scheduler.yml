@@ -133,9 +133,7 @@ jobs:
                     if [ -z $merge_validation ]; then
                         echo "Unable to merge pull request #$pr_number"
                         echo "PR #$pr_number" >> $UNMERGED_PR_FILE
-                    fi
-
-                    if [ ! -z $merge_validation ]; then
+                    else
                         echo "Merged pull request #$pr_number"
                         echo "PR #$pr_number" >> $MERGED_PR_FILE
                     fi
@@ -165,7 +163,7 @@ jobs:
                 done < $PASSED_PR_FILE
                 echo ""
                 cat $UNMERGED_PR_FILE
-                cat $MERGED_PR_FILE
+                # cat $MERGED_PR_FILE
                 
                 # output for informational purposes
                 # if [ ! -s "$MERGED_PR_FILE" ]; then
