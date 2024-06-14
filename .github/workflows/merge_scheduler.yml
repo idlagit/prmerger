@@ -131,14 +131,25 @@ jobs:
                     merge_validation=$(gh pr view $pr_number --json state | jq -r '.mergedAt')
                     
                     if [ ! -z "$merge_validation" ]; then
-                        echo "PR #pr_number is successfully merged"
+                        echo "Pull request #pr_number is successfully merged"
                         echo "PR #$pr_number" >> $MERGED_PR_FILE
                     else
-                        echo "Unable to merge #$pr_number
+                        echo "Unable to merge pull request #$pr_number
                         echo "PR #$pr_number" >> $UNMERGED_PR_FILE
                     fi
                     set -e
                     echo ""
+
+                    echo "*************************************************"
+                    echo "*************************************************"
+                    echo "***** The following pull requests were merged: "
+                    cat $MERGED_PR_FILE
+                    echo""
+                    echo "***** The following pull request could not be merged: "
+                    cat $UNMERGED_PR_FILE
+                    echo "*************************************************"
+                    echo "*************************************************"
+
                     
                     # if [ $pr_status == "MERGED" ]; then
                     #     echo "Pull request #$pr_number sucessfully merged. Current State is '$pr_status'"
