@@ -119,7 +119,6 @@ jobs:
             - name: merge passing pull requests
               # if: steps.checkspass.outcome == 'success'
               run: |
-                set -x
                 # merge the pull requests that passed all checks and validate merge success
                 while IFS= read -r line; do
                     pr_number=$(echo "$line" | awk '{print $1}')
@@ -132,7 +131,7 @@ jobs:
                     # check merge date as a validation that pr is actually merged
                     merge_validation=$(gh pr view -R $TARGET_REPO $pr_number --json state | jq -r '.mergedAt')
                     
-                    if [ ! -z $merge_validation ]; then
+                    if [ ! -z "$merge_validation" ]; then
                         echo "Merged pull request #$pr_number"
                         echo "PR #$pr_number" >> $MERGED_PR_FILE
                     else
