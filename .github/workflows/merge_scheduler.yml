@@ -119,59 +119,33 @@ jobs:
             - name: merge passing pull requests
               # if: steps.checkspass.outcome == 'success'
               run: |
+                set -x
                 # merge the pull requests that passed all checks and validate merge success
                 while IFS= read -r line; do
                     pr_number=$(echo "$line" | awk '{print $1}')
 
                     set +e
                     echo "Attempting to merge pull request #$pr_number....."
-                    gh pr merge $pr_number --repo $TARGET_REPO  --body "mergedBy $TRIGGER_PHRASE" --merge || echo "Skipping to next pr due to merge failure"
+                    gh pr merge $pr_number -R $TARGET_REPO  --merge || echo "Skipping to next pr due to merge failure"
+                    set -e
                     
                     # check merge date as a validation that pr is actually merged
-                    merge_validation=$(gh pr view $pr_number --json state | jq -r '.mergedAt')
+                    merge_validation=$(gh pr view -R $TARGET_REPO $pr_number --json state | jq -r '.mergedAt')
                     
-                    if [ -z $merge_validation ]; then
-                        echo "Unable to merge pull request #$pr_number"
-                        echo "PR #$pr_number" >> $UNMERGED_PR_FILE
-                    else
+                    if [ ! -z $merge_validation ]; then
                         echo "Merged pull request #$pr_number"
                         echo "PR #$pr_number" >> $MERGED_PR_FILE
+                    else
+                        echo "Unable to merge pull request #$pr_number"
+                        echo "PR #$pr_number" >> $UNMERGED_PR_FILE
                     fi
                     # echo ""
-
-                    # echo "*************************************************"
-                    # echo "*************************************************"
-                    # echo "***** The following pull requests were merged: "
-                    # cat $MERGED_PR_FILE
-                    # echo""
-                    # echo "***** The following pull request could not be merged: "
-                    # cat $UNMERGED_PR_FILE
-                    # echo "*************************************************"
-                    # echo "*************************************************"
-
-                    
-                    # if [ $pr_status == "MERGED" ]; then
-                    #     echo "Pull request #$pr_number sucessfully merged. Current State is '$pr_status'"
-                    #     echo "PR #$pr_number" >> $MERGED_PR_FILE
-                    #     gh pr comment $pr_number --body "Schedule merge by $TRIGGER_PHRASE"
-                    # else
-                    #     echo "Unable to merge #$pr_number. Current State is '$pr_status'"
-                    #     echo "PR #$pr_number" >> $UNMERGED_PR_FILE
-                    #     gh pr comment $pr_number --body "Failed scheduled merge attempt from $TRIGGER_PHRASE"
-                    # fi
-                    
+ 
                 done < $PASSED_PR_FILE
-                echo ""
-                cat $UNMERGED_PR_FILE
-                # cat $MERGED_PR_FILE
                 
-                # output for informational purposes
-                # if [ ! -s "$MERGED_PR_FILE" ]; then
-                #     echo "***** The following PR's were merged: "
-                #     cat $MERGED_PR_FILE
-                # fi
-
-                # if [ ! -s "$MERGED_PR_FILE" ]; then
-                #     echo "***** The following PR's were not merged: "
-                #     cat $UMERGED_PR_FILE
-                # fi                   
+                echo ""
+                echo "List of Merged PR"
+                cat $MERGED_PR_FILE
+                echo ""
+                echo "List of Unmerged PR"
+                cat $UNMERGED_PR_FILE
