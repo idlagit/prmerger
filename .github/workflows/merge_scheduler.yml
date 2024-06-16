@@ -130,7 +130,7 @@ jobs:
                     
                     # check merge date as a validation that pr is actually merged
                     merge_validation=$(gh pr view -R $TARGET_REPO $pr_number --json state | jq -r '.mergedAt')
-                    echo $merge_validation
+                    echo "Merge Status is: $merge_validation"
                     
                     if [ ! -z "$merge_validation" ]; then
                         echo "Merged pull request #$pr_number"
