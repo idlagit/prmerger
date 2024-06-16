@@ -117,32 +117,42 @@ jobs:
                 fi
 
             - name: merge passing pull requests
-              # if: steps.checkspass.outcome == 'success'
               run: |
                 # merge the pull requests that passed all checks and validate merge success
                 while IFS= read -r line; do
                     pr_number=$(echo "$line" | awk '{print $1}')
 
-                    set +e
+                    # set +e
                     echo "Attempting to merge pull request #$pr_number....."
                     gh pr merge $pr_number -R $TARGET_REPO  --merge || echo "Skipping to next pr due to merge failure"
-                    set -e
-                    
-                    # check merge date as a validation that pr is actually merged
-                    merge_validation=$(gh pr view -R $TARGET_REPO $pr_number --json state | jq -r '.mergedAt')
-                    echo "Merge Status is: $merge_validation"
-                    
-                    if [ ! -z "$merge_validation" ]; then
-                        echo "Merged pull request #$pr_number"
+                    # set -e
+
+                    MERGE_EXIT_CODE=$?
+
+                    if [ $MERGE_EXIT_CODE -eq 0 ]; then
+                        echo "Merged pull request #$pr_number successfully."
                         echo "PR #$pr_number" >> $MERGED_PR_FILE
+                    else
+                        echo "Unable to merge pull request #$pr_number. Exit code: $MERGE_EXIT_CODE"
+                        echo "PR #$pr_number" >> $UNMERGED_PR_FILE                 
                     fi
                     
-                    if [ -z "$merge_validation" ]; then
-                        echo "Unable to merge pull request #$pr_number"
-                        echo "PR #$pr_number" >> $UNMERGED_PR_FILE
-                    fi
-                    # echo ""
- 
+                    # # check merge date as a validation that pr is actually merged
+                    # merge_validation=$(gh pr view -R $TARGET_REPO $pr_number --json state | jq -r '.mergedAt')
+                    # echo "Merge Status is: $merge_validation"
+                    
+                    # if [ ! -z "$merge_validation" ]; then
+                    #     echo "Merged pull request #$pr_number"
+                    #     echo "PR #$pr_number" >> $MERGED_PR_FILE
+                    # fi
+                    
+                    # if [ -z "$merge_validation" ]; then
+                    #     echo "Unable to merge pull request #$pr_number"
+                    #     echo "PR #$pr_number" >> $UNMERGED_PR_FILE
+                    # fi
+                    
+                    echo ""
+                    
                 done < $PASSED_PR_FILE
                 
                 # echo ""
