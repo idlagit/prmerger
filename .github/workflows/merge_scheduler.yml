@@ -131,7 +131,7 @@ jobs:
                     
                     # check merge date as a validation that pr is actually merged
                     merge_validation=$(gh pr view -R $TARGET_REPO $pr_number --json state | jq -r '.mergedAt')
-                    echo "Merged DateTime: $merge_validation"
+                    echo "Merge Timestamp: $merge_validation"
                     
                     if [ $merge_validation == "null" ]; then
                         echo "Unable to merge pull request #$pr_number"
@@ -144,12 +144,13 @@ jobs:
                     echo ""
                 done < $PASSED_PR_FILE
 
-                set +e
                 if [ ! -z "$MERGED_PR_FILE" ]; then
+                    echo "Merged pull requests:"
                     cat $MERGED_PR_FILE
                 fi
 
                 if [ ! -z "$UNMERGED_PR_FILE" ]; then
+                    echo "Unmerged pull requests:"
                     cat $UNMERGED_PR_FILE
                 fi
 
