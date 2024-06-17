@@ -154,12 +154,15 @@ jobs:
                     # fi
                     
                     echo ""
-                    
                 done < $PASSED_PR_FILE
+
+                if [ ! -z "$MERGED_PR_FILE" ]; then
+                    cat $MERGED_PR_FILE
+                fi
+
+                if [ ! -z "$UNMERGED_PR_FILE" ]; then
+                    cat $UNMERGED_PR_FILE
+                fi
+
                 
-                # echo ""
-                # echo "List of Merged PR"
-                # cat $MERGED_PR_FILE
-                # echo ""
-                # echo "List of Unmerged PR"
-                # cat $UNMERGED_PR_FILE
+                   
