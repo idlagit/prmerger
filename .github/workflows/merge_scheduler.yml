@@ -85,10 +85,12 @@ jobs:
                     pr_number=$(echo "$line" | awk '{print $1}')
                     
                     # Get checks output from github cli in json format
+                    set +e
                     echo "Processing pull request #$pr_number: $pr_title"
                     CHECKS=$(gh pr checks $pr_number --repo $TARGET_REPO --json workflow,state)
                     echo $CHECKS | jq -c '.[]'
-
+                    set -e
+                    
                     # output check result to file for debugging
                     echo "pull request #$pr_number results:" >> $CHECKS_RESULT_FILE
                     echo $CHECKS | jq -c '.[]' >> $CHECKS_RESULT_FILE
