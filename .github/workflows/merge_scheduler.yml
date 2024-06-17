@@ -158,10 +158,14 @@ jobs:
 
                 if [ ! -z "$MERGED_PR_FILE" ]; then
                     cat $MERGED_PR_FILE
+                else
+                    exit 0
                 fi
 
                 if [ ! -z "$UNMERGED_PR_FILE" ]; then
                     cat $UNMERGED_PR_FILE
+                else
+                    exit 0
                 fi
 
                 
