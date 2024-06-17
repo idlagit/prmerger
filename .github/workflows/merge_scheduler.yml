@@ -124,10 +124,10 @@ jobs:
                 while IFS= read -r line; do
                     pr_number=$(echo "$line" | awk '{print $1}')
 
-                    set +e
+                    # set +e
                     echo "Attempting to merge pull request #$pr_number....."
                     gh pr merge $pr_number -R $TARGET_REPO  --merge
-                    set -e
+                    # set -e
                     
                     # check merge date as a validation that pr is actually merged
                     merge_validation=$(gh pr view -R $TARGET_REPO $pr_number --json state | jq -r '.mergedAt')
@@ -144,19 +144,5 @@ jobs:
                     echo ""
                 done < $PASSED_PR_FILE
 
-                [ -f "$MERGED_PR_FILE" ] && echo "Merged PR" && cat $MERGED_PR_FILE
-                [ -f "$UNMERGED_PR_FILE" ] && echo "Unmerged PR" && cat $UNMERGED_PR_FILE
-
-                
-                # if [ ! -f "$MERGED_PR_FILE" ]; then
-                #     echo "Merged pull requests:"
-                #     cat $MERGED_PR_FILE
-                # fi
-
-                # if [ ! -z "$UNMERGED_PR_FILE" ]; then
-                #     echo "Unmerged pull requests:"
-                #     cat $UNMERGED_PR_FILE
-                # fi
-
-                
-                   
+                [ -f "$MERGED_PR_FILE" ] && echo "Merged PR List:" && cat $MERGED_PR_FILE
+                [ -f "$UNMERGED_PR_FILE" ] && echo "Unmerged PR List:" && cat $UNMERGED_PR_FILE
