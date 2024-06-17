@@ -144,9 +144,13 @@ jobs:
                     echo ""
                 done < $PASSED_PR_FILE
 
+                # for information only
                 echo "*************************************************"
                 echo "**************** Job End Summary ****************"
-                [ -f "$MERGED_PR_FILE" ] && echo "Merged PR List:" && cat $MERGED_PR_FILE
-                [ -f "$UNMERGED_PR_FILE" ] && echo "Unmerged PR List:" && cat $UNMERGED_PR_FILE
+                echo "Merged PR List:"
+                [ -f "$MERGED_PR_FILE" ] && cat $MERGED_PR_FILE
+                echo ""
+                echo "Unmerged PR List:"
+                [ -f "$UNMERGED_PR_FILE" ] && cat $UNMERGED_PR_FILE
                 echo "*************************************************"
                 echo "*************************************************"
