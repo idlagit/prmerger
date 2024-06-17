@@ -156,18 +156,13 @@ jobs:
                     echo ""
                 done < $PASSED_PR_FILE
 
+                set +e
                 if [ ! -z "$MERGED_PR_FILE" ]; then
                     cat $MERGED_PR_FILE
-                    exit 0
-                else
-                    exit 0
                 fi
 
                 if [ ! -z "$UNMERGED_PR_FILE" ]; then
                     cat $UNMERGED_PR_FILE
-                    exit 0
-                else
-                    exit 0
                 fi
 
                 
