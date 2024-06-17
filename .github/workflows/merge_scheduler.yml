@@ -124,10 +124,10 @@ jobs:
                 while IFS= read -r line; do
                     pr_number=$(echo "$line" | awk '{print $1}')
 
-                    # set +e
+                    set +e
                     echo "Attempting to merge pull request #$pr_number....."
                     gh pr merge $pr_number -R $TARGET_REPO  --merge
-                    # set -e
+                    set -e
                     
                     # check merge date as a validation that pr is actually merged
                     merge_validation=$(gh pr view -R $TARGET_REPO $pr_number --json state | jq -r '.mergedAt')
