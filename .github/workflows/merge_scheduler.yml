@@ -130,8 +130,9 @@ jobs:
                     # set -e
 
                     MERGE_EXIT_CODE=$?
+                    echo $MERGE_EXIT_CODE
 
-                    if [ $MERGE_EXIT_CODE -eq 0 ]; then
+                    if [ "$MERGE_EXIT_CODE" == "0" ]; then
                         echo "Merged pull request #$pr_number successfully."
                         echo "PR #$pr_number" >> $MERGED_PR_FILE
                     else
