@@ -24,7 +24,6 @@ jobs:
             TRIGGER_PHRASE: '@schedule-merge'
             OPEN_PR_FILE: file_open_prs.txt
             MATCHED_PR_FILE: file_matched_prs.txt
-            CHECKS_RESULT_FILE: file_checks_result.txt
             PASSED_PR_FILE: file_passed_prs.txt
             MERGED_PR_FILE: file_merged_prs.txt
             UNMERGED_PR_FILE: file_unmerged_prs.txt
@@ -48,9 +47,8 @@ jobs:
                 fi
 
             - name: Get list of approved pr with matching trigger_phrase
-              # continue-on-error: true
               run: |
-                # check file for error handling
+                # check for inpt file and handle error
                 if [ ! -f "$OPEN_PR_FILE" ]; then
                     echo "No open pull requests to process"
                     exit 0
@@ -80,10 +78,8 @@ jobs:
                 fi
 
             - name: Get list of pr with all checks passed
-              # id: checkspass
-              # continue-on-error: true
               run: |
-                # check file for error handling
+                # check for inpt file and handle error
                 if [ ! -f "$MATCHED_PR_FILE" ]; then
                     echo "No open pull requests to process"
                     exit 0
@@ -97,20 +93,15 @@ jobs:
                     # Get checks output from github cli in json format
                     set +e
                     echo "Processing pull request #$pr_number: $pr_title"
-                    CHECKS=$(gh pr checks $pr_number --repo $TARGET_REPO --json workflow,state)
+                    CHECKS=$(gh pr checks $pr_number -R $TARGET_REPO --json workflow,state)
                     echo $CHECKS | jq -c '.[]'
                     set -e
-                    
-                    # # output check result to file for debugging
-                    # echo "pull request #$pr_number results:" >> $CHECKS_RESULT_FILE
-                    # echo $CHECKS | jq -c '.[]' >> $CHECKS_RESULT_FILE
-                    # echo "" >> $CHECKS_RESULT_FILE
 
                     # validate if all checks have a state value of 'success', then declares the pr as 'passed'
                     if echo "$CHECKS" | jq -e 'map(select(.state != "SUCCESS")) | length > 0' > /dev/null; then
-                        echo "Not All Checks Passed for pull request #$pr_number"
+                        echo "***** Not All Checks Passed for pull request #$pr_number"
                     else
-                        echo "All checks passed for pull request #$pr_number"
+                        echo "***** All checks passed for pull request #$pr_number"
                         echo $line >> $PASSED_PR_FILE
                     fi
                     echo ""
@@ -126,10 +117,8 @@ jobs:
                 fi
 
             - name: merge passing pull requests
-              # if: steps.checkspass.conclusion == 'success'
-              # continue-on-error: true
               run: |
-                # check file for error handling
+                # check for inpt file and handle error
                 if [ ! -f "$PASSED_PR_FILE" ]; then
                     echo "***** No passing pull request to merge. Exiting..."
                     exit 0
@@ -141,7 +130,7 @@ jobs:
 
                     set +e
                     echo "Attempting to merge pull request #$pr_number....."
-                    gh pr merge $pr_number -R $TARGET_REPO -b "byscheduler" --merge
+                    gh pr merge $pr_number -R $TARGET_REPO --merge
                     set -e
                     
                     # check merge date as a validation that pr is actually merged
@@ -149,12 +138,12 @@ jobs:
                     echo "Merge Validation Timestamp: $merge_validation"
                     
                     if [ $merge_validation == "null" ]; then
-                        echo "Unable to merge pull request #$pr_number"
-                        gh pr comment -R $TARGET_REPO $pr_number --body "failed merge by cron scheduler"
+                        echo "***** Unable to merge pull request #$pr_number"
+                        gh pr comment -R $TARGET_REPO $pr_number --body "failed merge by $TRIGGER_PHRASE"
                         echo "PR #$pr_number" >> $UNMERGED_PR_FILE
                     else
-                        echo "Merged pull request #$pr_number successfully"
-                        gh pr comment -R $TARGET_REPO $pr_number --body "merged by cron scheduler"
+                        echo "***** Merged pull request #$pr_number successfully"
+                        gh pr comment -R $TARGET_REPO $pr_number --body "merged by $TRIGGER_PHRASE"
                         echo "PR #$pr_number" >> $MERGED_PR_FILE
                     fi
                     
@@ -167,7 +156,7 @@ jobs:
                 echo "Merged PR List:"
                 [ -f "$MERGED_PR_FILE" ] && cat $MERGED_PR_FILE
                 echo ""
-                echo "Unmerged PR List:"
+                echo "Failed Merge PR List:"
                 [ -f "$UNMERGED_PR_FILE" ] && cat $UNMERGED_PR_FILE
                 echo "*************************************************"
                 echo "*************************************************"
