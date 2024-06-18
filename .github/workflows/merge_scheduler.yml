@@ -48,7 +48,7 @@ jobs:
 
             - name: Get list of approved pr with matching trigger_phrase
               run: |
-                # check for inpt file and handle error
+                # check for input file and handle if missing
                 if [ ! -f "$OPEN_PR_FILE" ]; then
                     echo "No open pull requests to process"
                     exit 0
@@ -79,7 +79,7 @@ jobs:
 
             - name: Get list of pr with all checks passed
               run: |
-                # check for inpt file and handle error
+                # check for input file and handle if missing
                 if [ ! -f "$MATCHED_PR_FILE" ]; then
                     echo "No open pull requests to process"
                     exit 0
@@ -118,7 +118,7 @@ jobs:
 
             - name: merge passing pull requests
               run: |
-                # check for inpt file and handle error
+                # check for input file and handle if missing
                 if [ ! -f "$PASSED_PR_FILE" ]; then
                     echo "***** No passing pull request to merge. Exiting..."
                     exit 0
@@ -134,7 +134,7 @@ jobs:
                     set -e
                     
                     # check merge date as a validation that pr is actually merged
-                    merge_validation=$(gh pr view -R $TARGET_REPO $pr_number --json mergedAt)
+                    merge_validation=$(gh pr view -R $TARGET_REPO $pr_number --json mergedAt | jq -r '.mergedAt')
                     echo "Merge Validation Timestamp: $merge_validation"
                     
                     if [ $merge_validation == "null" ]; then
