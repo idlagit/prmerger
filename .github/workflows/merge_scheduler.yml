@@ -80,6 +80,7 @@ jobs:
 
             - name: Get list of pr with all checks passed
               id: checkspass
+              continue-on-error: true
               run: |
                 # Validate if all checks for each PR have passed
                 while IFS= read -r line; do
