@@ -68,7 +68,7 @@ jobs:
 
                 if [ ! -f $MATCHED_PR_FILE ]; then
                     echo "No matching pull request found. Exiting..."
-                    exit 0
+                    exit 1
                 else
                     echo "*************************************************"
                     echo "*************************************************"
@@ -110,7 +110,7 @@ jobs:
                 
                 if [ ! -f "$PASSED_PR_FILE" ]; then
                     echo "***** No pull request passed all checks. Exiting..."
-                    exit 0
+                    exit 1
                 else
                     echo "*************************************************"
                     echo "*************************************************"
@@ -121,6 +121,7 @@ jobs:
                 fi
 
             - name: merge passing pull requests
+              if: steps.checkspass.conclusion == 'success'
               run: |
                 # merge the pull requests that passed all checks and validate merge success
                 while IFS= read -r line; do
