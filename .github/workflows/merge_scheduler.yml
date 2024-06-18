@@ -139,7 +139,7 @@ jobs:
                     
                     if [ $merge_validation == "null" ]; then
                         echo "***** Unable to merge pull request #$pr_number"
-                        gh pr comment -R $TARGET_REPO $pr_number --body "failed merge by $TRIGGER_PHRASE"
+                        gh pr comment -R $TARGET_REPO $pr_number --body "failed merge attempt by $TRIGGER_PHRASE"
                         echo "PR #$pr_number" >> $UNMERGED_PR_FILE
                     else
                         echo "***** Merged pull request #$pr_number successfully"
