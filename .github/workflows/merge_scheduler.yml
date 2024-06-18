@@ -141,6 +141,7 @@ jobs:
                     set +e
                     echo "Attempting to merge pull request #$pr_number....."
                     gh pr merge $pr_number -R $TARGET_REPO  --merge
+                    sleep 3
                     set -e
                     
                     # check merge date as a validation that pr is actually merged
