@@ -38,10 +38,7 @@ jobs:
                 # retrive a list of open pull requests and write output to a fil
                 gh pr list --repo $TARGET_REPO --state open --json number,reviewDecision,title --jq '.[] | "\(.number) \(.reviewDecision) \(.title)"' > $OPEN_PR_FILE
 
-                if [ ! -s "$OPEN_PR_FILE" ]; then
-                    echo "No open pull requests were found"
-                    exit 0
-                else
+                if [ -s "$OPEN_PR_FILE" ]; then
                     echo "*************************************************"
                     echo "*************************************************"
                     echo "**** The following open pull request were found: "
@@ -51,7 +48,13 @@ jobs:
                 fi
 
             - name: Get list of approved pr with matching trigger_phrase
+              # continue-on-error: true
               run: |
+                if [ ! -f "$OPEN_PR_FILE" ]; then
+                    echo "No open pull requests to process"
+                    exit 0
+                fi
+                
                 # filter for open pr's that are 'APPROVED' and contain the trigger phrase in title
                 counter=1
                 while IFS= read -r line; do
@@ -66,10 +69,7 @@ jobs:
                 done < $OPEN_PR_FILE 
                 echo ""
 
-                if [ ! -f $MATCHED_PR_FILE ]; then
-                    echo "No matching pull request found. Exiting..."
-                    exit 1
-                else
+                if [ -f $MATCHED_PR_FILE ]; then
                     echo "*************************************************"
                     echo "*************************************************"
                     echo "***** THe following pull request were matched: "
@@ -79,9 +79,15 @@ jobs:
                 fi
 
             - name: Get list of pr with all checks passed
-              id: checkspass
+              # id: checkspass
               # continue-on-error: true
               run: |
+                # check file for error handling
+                if [ ! -f "$OPEN_PR_FILE" ]; then
+                    echo "No open pull requests to process"
+                    exit 0
+                fi
+                
                 # Validate if all checks for each PR have passed
                 while IFS= read -r line; do
                     # extract pull request number from first position of each line
@@ -120,6 +126,7 @@ jobs:
 
             - name: merge passing pull requests
               # if: steps.checkspass.conclusion == 'success'
+              # continue-on-error: true
               run: |
 
                 if [ ! -f "$PASSED_PR_FILE" ]; then
