@@ -80,7 +80,7 @@ jobs:
 
             - name: Get list of pr with all checks passed
               id: checkspass
-              continue-on-error: true
+              # continue-on-error: true
               run: |
                 # Validate if all checks for each PR have passed
                 while IFS= read -r line; do
@@ -94,10 +94,10 @@ jobs:
                     echo $CHECKS | jq -c '.[]'
                     set -e
                     
-                    # output check result to file for debugging
-                    echo "pull request #$pr_number results:" >> $CHECKS_RESULT_FILE
-                    echo $CHECKS | jq -c '.[]' >> $CHECKS_RESULT_FILE
-                    echo "" >> $CHECKS_RESULT_FILE
+                    # # output check result to file for debugging
+                    # echo "pull request #$pr_number results:" >> $CHECKS_RESULT_FILE
+                    # echo $CHECKS | jq -c '.[]' >> $CHECKS_RESULT_FILE
+                    # echo "" >> $CHECKS_RESULT_FILE
 
                     # validate if all checks have a state value of 'success', then declares the pr as 'passed'
                     if echo "$CHECKS" | jq -e 'map(select(.state != "SUCCESS")) | length > 0' > /dev/null; then
@@ -109,10 +109,7 @@ jobs:
                     echo ""
                 done < $MATCHED_PR_FILE
                 
-                if [ ! -f "$PASSED_PR_FILE" ]; then
-                    echo "***** No pull request passed all checks. Exiting..."
-                    exit 1
-                else
+                if [ -f "$PASSED_PR_FILE" ]; then
                     echo "*************************************************"
                     echo "*************************************************"
                     echo "***** The following pull request passed all checks: "
@@ -122,8 +119,14 @@ jobs:
                 fi
 
             - name: merge passing pull requests
-              if: steps.checkspass.conclusion == 'success'
+              # if: steps.checkspass.conclusion == 'success'
               run: |
+
+                if [ ! -f "$PASSED_PR_FILE" ]; then
+                    echo "***** No passing pull request to merge. Exiting..."
+                    exit 0
+                fi
+                
                 # merge the pull requests that passed all checks and validate merge success
                 while IFS= read -r line; do
                     pr_number=$(echo "$line" | awk '{print $1}')
