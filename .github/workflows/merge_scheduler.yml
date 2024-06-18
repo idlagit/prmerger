@@ -48,11 +48,11 @@ jobs:
                 fi
 
             - name: Get list of approved pr with matching trigger_phrase
-              # continue-on-error: true
+              continue-on-error: true
               run: |
                 if [ ! -f "$OPEN_PR_FILE" ]; then
                     echo "No open pull requests to process"
-                    exit 0
+                    exit 1
                 fi
                 
                 # filter for open pr's that are 'APPROVED' and contain the trigger phrase in title
