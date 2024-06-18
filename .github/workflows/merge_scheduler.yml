@@ -6,10 +6,12 @@
 
 name: PR Merge Scheduler
 
-on: 
-    schedule:
-        # run the workflow everyday at 6:30AM(UTC) i.e 2:30AM(EST)
-        - cron: '*/16 * * * *'
+on: workflow_dispatch
+# on: 
+#     workflow_dispatch
+#     schedule:
+#         # run the workflow everyday at 6:30AM(UTC) i.e 2:30AM(EST)
+#         - cron: '*/16 * * * *'
 
 jobs:
     schedule_merge:
@@ -36,10 +38,7 @@ jobs:
                 # retrive a list of open pull requests and write output to a fil
                 gh pr list --repo $TARGET_REPO --state open --json number,reviewDecision,title --jq '.[] | "\(.number) \(.reviewDecision) \(.title)"' > $OPEN_PR_FILE
 
-                if [ ! -s "$OPEN_PR_FILE" ]; then
-                    echo "No open pull requests were found"
-                    exit 1
-                else
+                if [ -s "$OPEN_PR_FILE" ]; then
                     echo "*************************************************"
                     echo "*************************************************"
                     echo "**** The following open pull request were found: "
@@ -49,7 +48,13 @@ jobs:
                 fi
 
             - name: Get list of approved pr with matching trigger_phrase
+              # continue-on-error: true
               run: |
+                if [ ! -f "$OPEN_PR_FILE" ]; then
+                    echo "No open pull requests to process"
+                    exit 0
+                fi
+                
                 # filter for open pr's that are 'APPROVED' and contain the trigger phrase in title
                 counter=1
                 while IFS= read -r line; do
@@ -64,10 +69,7 @@ jobs:
                 done < $OPEN_PR_FILE 
                 echo ""
 
-                if [ ! -s $MATCHED_PR_FILE ]; then
-                    echo "No matching pull request found. Exiting..."
-                    exit 1
-                else
+                if [ -f $MATCHED_PR_FILE ]; then
                     echo "*************************************************"
                     echo "*************************************************"
                     echo "***** THe following pull request were matched: "
@@ -77,22 +79,31 @@ jobs:
                 fi
 
             - name: Get list of pr with all checks passed
-              id: checkspass
+              # id: checkspass
+              # continue-on-error: true
               run: |
+                # check file for error handling
+                if [ ! -f "$MATCHED_PR_FILE" ]; then
+                    echo "No open pull requests to process"
+                    exit 0
+                fi
+                
                 # Validate if all checks for each PR have passed
                 while IFS= read -r line; do
                     # extract pull request number from first position of each line
                     pr_number=$(echo "$line" | awk '{print $1}')
                     
                     # Get checks output from github cli in json format
+                    set +e
                     echo "Processing pull request #$pr_number: $pr_title"
                     CHECKS=$(gh pr checks $pr_number --repo $TARGET_REPO --json workflow,state)
                     echo $CHECKS | jq -c '.[]'
-
-                    # output check result to file for debugging
-                    echo "pull request #$pr_number results:" >> $CHECKS_RESULT_FILE
-                    echo $CHECKS | jq -c '.[]' >> $CHECKS_RESULT_FILE
-                    echo "" >> $CHECKS_RESULT_FILE
+                    set -e
+                    
+                    # # output check result to file for debugging
+                    # echo "pull request #$pr_number results:" >> $CHECKS_RESULT_FILE
+                    # echo $CHECKS | jq -c '.[]' >> $CHECKS_RESULT_FILE
+                    # echo "" >> $CHECKS_RESULT_FILE
 
                     # validate if all checks have a state value of 'success', then declares the pr as 'passed'
                     if echo "$CHECKS" | jq -e 'map(select(.state != "SUCCESS")) | length > 0' > /dev/null; then
@@ -104,10 +115,7 @@ jobs:
                     echo ""
                 done < $MATCHED_PR_FILE
                 
-                if [ ! -s "$PASSED_PR_FILE" ]; then
-                    echo "***** No pull request passed all checks. Exiting..."
-                    exit 1
-                else
+                if [ -f "$PASSED_PR_FILE" ]; then
                     echo "*************************************************"
                     echo "*************************************************"
                     echo "***** The following pull request passed all checks: "
@@ -117,47 +125,46 @@ jobs:
                 fi
 
             - name: merge passing pull requests
+              # if: steps.checkspass.conclusion == 'success'
+              # continue-on-error: true
               run: |
+
+                if [ ! -f "$PASSED_PR_FILE" ]; then
+                    echo "***** No passing pull request to merge. Exiting..."
+                    exit 0
+                fi
+                
                 # merge the pull requests that passed all checks and validate merge success
                 while IFS= read -r line; do
                     pr_number=$(echo "$line" | awk '{print $1}')
 
-                    # set +e
+                    set +e
                     echo "Attempting to merge pull request #$pr_number....."
-                    gh pr merge $pr_number -R $TARGET_REPO  --merge || echo "Skipping to next pr due to merge failure"
-                    # set -e
-
-                    MERGE_EXIT_CODE=$?
-
-                    if [ $MERGE_EXIT_CODE -eq 0 ]; then
-                        echo "Merged pull request #$pr_number successfully."
-                        echo "PR #$pr_number" >> $MERGED_PR_FILE
+                    gh pr merge $pr_number -R $TARGET_REPO  --merge
+                    set -e
+                    
+                    # check merge date as a validation that pr is actually merged
+                    merge_validation=$(gh pr view -R $TARGET_REPO $pr_number --json state | jq -r '.mergedAt')
+                    echo "Merge Validation Timestamp: $merge_validation"
+                    
+                    if [ $merge_validation == "null" ]; then
+                        echo "Unable to merge pull request #$pr_number"
+                        echo "PR #$pr_number" >> $UNMERGED_PR_FILE
                     else
-                        echo "Unable to merge pull request #$pr_number. Exit code: $MERGE_EXIT_CODE"
-                        echo "PR #$pr_number" >> $UNMERGED_PR_FILE                 
+                        echo "Merged pull request #$pr_number successfully"
+                        echo "PR #$pr_number" >> $MERGED_PR_FILE
                     fi
                     
-                    # # check merge date as a validation that pr is actually merged
-                    # merge_validation=$(gh pr view -R $TARGET_REPO $pr_number --json state | jq -r '.mergedAt')
-                    # echo "Merge Status is: $merge_validation"
-                    
-                    # if [ ! -z "$merge_validation" ]; then
-                    #     echo "Merged pull request #$pr_number"
-                    #     echo "PR #$pr_number" >> $MERGED_PR_FILE
-                    # fi
-                    
-                    # if [ -z "$merge_validation" ]; then
-                    #     echo "Unable to merge pull request #$pr_number"
-                    #     echo "PR #$pr_number" >> $UNMERGED_PR_FILE
-                    # fi
-                    
                     echo ""
-                    
                 done < $PASSED_PR_FILE
-                
-                # echo ""
-                # echo "List of Merged PR"
-                # cat $MERGED_PR_FILE
-                # echo ""
-                # echo "List of Unmerged PR"
-                # cat $UNMERGED_PR_FILE
+
+                # for information only
+                echo "*************************************************"
+                echo "**************** Job End Summary ****************"
+                echo "Merged PR List:"
+                [ -f "$MERGED_PR_FILE" ] && cat $MERGED_PR_FILE
+                echo ""
+                echo "Unmerged PR List:"
+                [ -f "$UNMERGED_PR_FILE" ] && cat $UNMERGED_PR_FILE
+                echo "*************************************************"
+                echo "*************************************************"
