@@ -50,6 +50,7 @@ jobs:
             - name: Get list of approved pr with matching trigger_phrase
               # continue-on-error: true
               run: |
+                # check file for error handling
                 if [ ! -f "$OPEN_PR_FILE" ]; then
                     echo "No open pull requests to process"
                     exit 0
@@ -128,7 +129,7 @@ jobs:
               # if: steps.checkspass.conclusion == 'success'
               # continue-on-error: true
               run: |
-
+                # check file for error handling
                 if [ ! -f "$PASSED_PR_FILE" ]; then
                     echo "***** No passing pull request to merge. Exiting..."
                     exit 0
@@ -140,19 +141,20 @@ jobs:
 
                     set +e
                     echo "Attempting to merge pull request #$pr_number....."
-                    gh pr merge $pr_number -R $TARGET_REPO  --merge
-                    sleep 3
+                    gh pr merge $pr_number -R $TARGET_REPO -b "byscheduler" --merge
                     set -e
                     
                     # check merge date as a validation that pr is actually merged
-                    merge_validation=$(gh pr view -R $TARGET_REPO $pr_number --json state | jq -r '.mergedAt')
+                    merge_validation=$(gh pr view -R $TARGET_REPO $pr_number --json mergedAt)
                     echo "Merge Validation Timestamp: $merge_validation"
                     
                     if [ $merge_validation == "null" ]; then
                         echo "Unable to merge pull request #$pr_number"
+                        gh pr comment $pr_number --body "failed merge by cron scheduler"
                         echo "PR #$pr_number" >> $UNMERGED_PR_FILE
                     else
                         echo "Merged pull request #$pr_number successfully"
+                        gh pr comment $pr_number --body "merged by cron scheduler"
                         echo "PR #$pr_number" >> $MERGED_PR_FILE
                     fi
                     
