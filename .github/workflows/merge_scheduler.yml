@@ -83,7 +83,7 @@ jobs:
               # continue-on-error: true
               run: |
                 # check file for error handling
-                if [ ! -f "$OPEN_PR_FILE" ]; then
+                if [ ! -f "$MATCHED_PR_FILE" ]; then
                     echo "No open pull requests to process"
                     exit 0
                 fi
