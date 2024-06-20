@@ -17,6 +17,11 @@ jobs:
     schedule_merge:
         name: schedule merge
         runs-on: ubuntu-latest
+        container:
+            image: maniator/gh
+            # credentials:
+            #     username: {{ secrets.gh_username }}
+            #     password: {{ secrets.gh_password }}
         env:
             GH_TOKEN: ${{ github.token }}
             # Defining enviroment variables for the job
