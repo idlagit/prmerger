@@ -90,11 +90,12 @@ jobs:
                     pr_number=$(echo "$line" | awk '{print $1}')
                     
                     # Get checks output from github cli in json format
-                    # set +e
+                    # Allow execution to continue if non zero status code is returned
+                    set +e
                     echo "Processing pull request #$pr_number: $pr_title"
                     CHECKS=$(gh pr checks $pr_number -R $TARGET_REPO --json workflow,state)
                     echo $CHECKS | jq -c '.[]'
-                    # set -e
+                    set -e
 
                     # validate if all checks have a state value of 'success', then declares the pr as 'passed'
                     if echo "$CHECKS" | jq -e 'map(select(.state != "SUCCESS")) | length > 0' > /dev/null; then
