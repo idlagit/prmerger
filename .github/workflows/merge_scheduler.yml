@@ -6,12 +6,11 @@
 
 name: PR Merge Scheduler
 
-on: workflow_dispatch
-# on: 
-#     workflow_dispatch
-#     schedule:
-#         # run the workflow everyday at 6:30AM(UTC) i.e 2:30AM(EST)
-#         - cron: '*/16 * * * *'
+on: 
+    workflow_dispatch: #allow manual trigger
+    # schedule:
+    #     # run the workflow everyday at 6:30AM(UTC) i.e 2:30AM(EST)
+    #     - cron: '30 6 * * *'
 
 jobs:
     schedule_merge:
@@ -91,6 +90,7 @@ jobs:
                     pr_number=$(echo "$line" | awk '{print $1}')
                     
                     # Get checks output from github cli in json format
+                    # Allow execution to continue if non zero status code is returned
                     set +e
                     echo "Processing pull request #$pr_number: $pr_title"
                     CHECKS=$(gh pr checks $pr_number -R $TARGET_REPO --json workflow,state)
