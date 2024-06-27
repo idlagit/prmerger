@@ -98,11 +98,12 @@ jobs:
                     set -e
 
                     # validate if all checks have a state value of 'success', then declares the pr as 'passed'
-                    if echo "$CHECKS" | jq -e 'map(select(.state != "SUCCESS")) | length > 0' > /dev/null; then
-                        echo "***** Not All Checks Passed for pull request #$pr_number"
-                    else
-                        echo "***** All checks passed for pull request #$pr_number"
+                    if echo "$CHECKS" | jq -e 'map(select(.state != "SUCCESS")) | length == 0' > /dev/null; then
+                        echo "***** All Checks Passed for pull request #$pr_number"
                         echo $line >> $PASSED_PR_FILE
+                    else
+                        echo "***** Not all checks passed for pull request #$pr_number"
+   
                     fi
                     echo ""
                 done < $MATCHED_PR_FILE
