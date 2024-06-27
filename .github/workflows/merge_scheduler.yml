@@ -30,7 +30,7 @@ jobs:
         steps:
             - name: Get list of open pr
               run: |
-                "JQ_PATH=$(which jq)" >> GITHUB_ENV
+                "JQ_PATH=$(which jq)" >> $GITHUB_ENV
                 echo "jq path is: $JQ_PATH"
                 echo "gh path is: $(which gh)"
 
