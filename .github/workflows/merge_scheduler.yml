@@ -96,16 +96,18 @@ jobs:
                     CHECKS=$(gh pr checks $pr_number -R $TARGET_REPO --json workflow,state)
                     echo $CHECKS | jq -c '.[]'
                     set -e
-
+                    
                     # validate if all checks have a state value of 'success', then declares the pr as 'passed'
                     # if echo "$CHECKS" | jq -e 'map(select(.state != "SUCCESS")) | length == 0' > /dev/null; then
                     if echo "$CHECKS" | jq -e 'map(has("state") and .state == "SUCCESS") | all' > /dev/null; then
                         echo "***** All Checks Passed for pull request #$pr_number"
                         echo $line >> $PASSED_PR_FILE
+                    elif echo "$CHECKS" | grep -q "no checks reported"; then
+                        echo "***** Not all checks passed for pull request #$pr_number"
                     else
                         echo "***** Not all checks passed for pull request #$pr_number"
-   
                     fi
+                    
                     echo ""
                 done < $MATCHED_PR_FILE
                 
