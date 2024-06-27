@@ -30,6 +30,11 @@ jobs:
         steps:
             - name: Get list of open pr
               run: |
+                "JQ_PATH=$(which jq)" >> GITHUB_ENV
+                echo "jq path is: $JQ_PATH"
+                echo "gh path is: $(which gh)"
+
+              
                 # clear out the file content if already exist and retrive a list of open pull requests and write output to a file
                 > $OPEN_PR_FILE
 
@@ -94,7 +99,7 @@ jobs:
                     set +e
                     echo "Processing pull request #$pr_number: $pr_title"
                     CHECKS=$(gh pr checks $pr_number -R $TARGET_REPO --json workflow,state)
-                    echo $CHECKS | jq -c '.[]'
+                    echo $CHECKS | $JQ_PATH -c '.[]'
                     set -e
 
                     if echo "$CHECKS" | grep -q "no checks reported"; then
