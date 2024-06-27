@@ -33,7 +33,7 @@ jobs:
                 which jq
                 which gh
                 JQ_PATH=$(which jq)
-                echo $JQ_PATH
+                echo "$JQ_PATH" >> $GITHUB_ENV
                 # echo "jq path is: $JQ_PATH"
                 # echo "gh path is: $(which gh)"
 
@@ -86,6 +86,7 @@ jobs:
 
             - name: Get list of pr with all checks passed
               run: |
+                echo $JQ_PATH
                 # check for input file and handle if missing
                 if [ ! -f "$MATCHED_PR_FILE" ]; then
                     echo "No open pull requests to process"
