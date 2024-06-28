@@ -19,8 +19,8 @@ jobs:
         container:
             image: miniator/gh
             credentials:
-                username: ${{ dockerhub_username }}
-                password: ${{ dockerhub_password }}
+                username: ${{ env.dockerhub_username }}
+                password: ${{ env.dockerhub_password }}
         env:
             GH_TOKEN: ${{ github.token }}
             # Defining enviroment variables for the job
