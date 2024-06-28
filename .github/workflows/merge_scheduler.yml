@@ -16,6 +16,11 @@ jobs:
     schedule_merge:
         name: schedule merge
         runs-on: ubuntu-latest
+        container:
+            image: miniator/gh
+            credentials:
+                username: ${{ dockerhub_username }}
+                password: ${{ dockerhub_password }}
         env:
             GH_TOKEN: ${{ github.token }}
             # Defining enviroment variables for the job
@@ -26,9 +31,7 @@ jobs:
             PASSED_PR_FILE: file_passed_prs.txt
             MERGED_PR_FILE: file_merged_prs.txt
             UNMERGED_PR_FILE: file_unmerged_prs.txt
-        container:
-            image: miniator/gh
- 
+            
         steps:
             - name: Get list of open pr
               run: |
