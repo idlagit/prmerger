@@ -16,6 +16,9 @@ jobs:
     schedule_merge:
         name: schedule merge
         runs-on: ubuntu-latest
+        container:
+            image: miniator/gh
+
         env:
             GH_TOKEN: ${{ github.token }}
             # Defining enviroment variables for the job
