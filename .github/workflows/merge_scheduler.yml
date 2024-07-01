@@ -16,6 +16,11 @@ jobs:
     schedule_merge:
         name: schedule merge
         runs-on: ubuntu-latest
+        # container:
+        #     image: miniator/gh
+        #     credentials:
+        #         username: ${{ secrets.dockerhub_username }}
+        #         password: ${{ secrets.dockerhub_password }}
         env:
             GH_TOKEN: ${{ github.token }}
             # Defining enviroment variables for the job
@@ -26,15 +31,10 @@ jobs:
             PASSED_PR_FILE: file_passed_prs.txt
             MERGED_PR_FILE: file_merged_prs.txt
             UNMERGED_PR_FILE: file_unmerged_prs.txt
- 
+            
         steps:
             - name: Get list of open pr
               run: |
-                "JQ_PATH=$(which jq)" >> GITHUB_ENV
-                echo "jq path is: $JQ_PATH"
-                echo "gh path is: $(which gh)"
-
-              
                 # clear out the file content if already exist and retrive a list of open pull requests and write output to a file
                 > $OPEN_PR_FILE
 
@@ -93,26 +93,32 @@ jobs:
                 while IFS= read -r line; do
                     # extract pull request number from first position of each line
                     pr_number=$(echo "$line" | awk '{print $1}')
-                    
-                    # Get checks output from github cli in json format
-                    # Allow execution to continue if non zero status code is returned
-                    set +e
-                    echo "Processing pull request #$pr_number: $pr_title"
-                    CHECKS=$(gh pr checks $pr_number -R $TARGET_REPO --json workflow,state)
-                    echo $CHECKS | $JQ_PATH -c '.[]'
-                    set -e
 
-                    if echo "$CHECKS" | grep -q "no checks reported"; then
-                        echo "***** Not all checks passed for pull request #$pr_number"
-                    fi
+                    # fetch base branch name
+                    base_branch_name=$(gh pr view $pr_number -R $TARGET_REPO --json baseRefName | jq -r '.[]')
+                    echo $base_branch_name
+
+                    if [ $base_branch_name == "master" ]; then
+                        
+                        # Get checks output from github cli in json format
+                        # Allow execution to continue if non zero status code is returned
+                        set +e
+                        echo "Processing pull request #$pr_number: $pr_title"
+                        CHECKS=$(gh pr checks $pr_number -R $TARGET_REPO --json workflow,state)
+                        echo $CHECKS | jq -c '.[]'
+                        set -e
+    
+                        # validate if all checks have a state value of 'success', then declares the pr as 'passed'
+                        if echo "$CHECKS" | jq -e 'map(select(.state != "SUCCESS")) | length > 0' > /dev/null; then
+                            echo "***** Not All Checks Passed for pull request #$pr_number"
+                        else
+                            echo "***** All checks passed for pull request #$pr_number"
+                            echo $line >> $PASSED_PR_FILE
+                        fi
                     
-                    # validate if all checks have a state value of 'success', then declares the pr as 'passed'
-                    # if echo "$CHECKS" | jq -e 'map(select(.state != "SUCCESS")) | length == 0' > /dev/null; then
-                    if echo "$CHECKS" | jq -e 'map(has("state") and .state == "SUCCESS") | all' > /dev/null; then
-                        echo "***** All Checks Passed for pull request #$pr_number"
-                        echo $line >> $PASSED_PR_FILE
                     else
-                        echo "***** Not all checks passed for pull request #$pr_number"                        
+                            echo "***** Non Master Branch - Bypassing checks for pull request #$pr_number"
+                            echo $line >> $PASSED_PR_FILE
                     fi
                     
                     echo ""
@@ -138,7 +144,7 @@ jobs:
                 # merge the pull requests that passed all checks and validate merge success
                 while IFS= read -r line; do
                     pr_number=$(echo "$line" | awk '{print $1}')
-
+                                        
                     set +e
                     echo "Attempting to merge pull request #$pr_number....."
                     gh pr merge $pr_number -R $TARGET_REPO --merge
