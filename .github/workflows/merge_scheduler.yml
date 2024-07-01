@@ -35,12 +35,11 @@ jobs:
         steps:
             - name: Get list of open pr
               run: |
-                which jq
-                which gh
-                JQ_PATH=$(which jq)
-                echo "$JQ_PATH" >> $GITHUB_ENV
+                # which jq
+                # which gh
+                # JQ_PATH=$(which jq)
+                # echo "$JQ_PATH" >> $GITHUB_ENV
 
-              
                 # clear out the file content if already exist and retrive a list of open pull requests and write output to a file
                 > $OPEN_PR_FILE
 
@@ -106,20 +105,15 @@ jobs:
                     set +e
                     echo "Processing pull request #$pr_number: $pr_title"
                     CHECKS=$(gh pr checks $pr_number -R $TARGET_REPO --json workflow,state)
-                    echo $CHECKS | $JQ_PATH -c '.[]'
+                    echo $CHECKS | jq -c '.[]'
                     set -e
 
-                    if echo "$CHECKS" | grep -q "no checks reported"; then
-                        echo "***** Not all checks passed for pull request #$pr_number"
-                    fi
-                    
                     # validate if all checks have a state value of 'success', then declares the pr as 'passed'
-                    # if echo "$CHECKS" | jq -e 'map(select(.state != "SUCCESS")) | length == 0' > /dev/null; then
-                    if echo "$CHECKS" | jq -e 'map(has("state") and .state == "SUCCESS") | all' > /dev/null; then
-                        echo "***** All Checks Passed for pull request #$pr_number"
-                        echo $line >> $PASSED_PR_FILE
+                    if echo "$CHECKS" | jq -e 'map(select(.state != "SUCCESS")) | length > 0' > /dev/null; then
+                        echo "***** Not All Checks Passed for pull request #$pr_number"
                     else
-                        echo "***** Not all checks passed for pull request #$pr_number"                        
+                        echo "***** All checks passed for pull request #$pr_number"
+                        echo $line >> $PASSED_PR_FILE
                     fi
                     
                     echo ""
