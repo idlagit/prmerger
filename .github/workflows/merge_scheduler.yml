@@ -39,8 +39,6 @@ jobs:
                 which gh
                 JQ_PATH=$(which jq)
                 echo "$JQ_PATH" >> $GITHUB_ENV
-                # echo "jq path is: $JQ_PATH"
-                # echo "gh path is: $(which gh)"
 
               
                 # clear out the file content if already exist and retrive a list of open pull requests and write output to a file
