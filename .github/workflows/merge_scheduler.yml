@@ -35,9 +35,6 @@ jobs:
         steps:
             - name: Get list of open pr
               run: |
-                BASE_BRANCH="${{ github.event.pull_request.base.ref }}"
-                echo $BASE_BRANCH
-
                 # clear out the file content if already exist and retrive a list of open pull requests and write output to a file
                 > $OPEN_PR_FILE
 
@@ -86,7 +83,6 @@ jobs:
 
             - name: Get list of pr with all checks passed
               run: |
-                echo $JQ_PATH
                 # check for input file and handle if missing
                 if [ ! -f "$MATCHED_PR_FILE" ]; then
                     echo "No open pull requests to process"
@@ -137,7 +133,8 @@ jobs:
                 # merge the pull requests that passed all checks and validate merge success
                 while IFS= read -r line; do
                     pr_number=$(echo "$line" | awk '{print $1}')
-
+                    base_branch_name=$(gh pr view $pr_number --json baseRefName)
+                    echo $base_branch_name
                     set +e
                     echo "Attempting to merge pull request #$pr_number....."
                     gh pr merge $pr_number -R $TARGET_REPO --merge
