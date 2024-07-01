@@ -16,11 +16,11 @@ jobs:
     schedule_merge:
         name: schedule merge
         runs-on: ubuntu-latest
-        container:
-            image: miniator/gh
-            credentials:
-                username: ${{ secrets.dockerhub_username }}
-                password: ${{ secrets.dockerhub_password }}
+        # container:
+        #     image: miniator/gh
+        #     credentials:
+        #         username: ${{ secrets.dockerhub_username }}
+        #         password: ${{ secrets.dockerhub_password }}
         env:
             GH_TOKEN: ${{ github.token }}
             # Defining enviroment variables for the job
