@@ -96,7 +96,7 @@ jobs:
 
                     # fetch base branch name
                     base_branch_name=$(gh pr view $pr_number -R $TARGET_REPO --json baseRefName | jq -r '.[]')
-                    echo $base_branch_name
+                    echo "Base Branch Name: $(base_branch_name)"
 
                     if [ $base_branch_name == "master" ]; then
                         
