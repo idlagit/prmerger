@@ -35,8 +35,8 @@ jobs:
         steps:
             - name: Get list of open pr
               run: |
-                # echo "$JQ_PATH" >> $GITHUB_ENV
-                echo "${{ github.event.pull_request.base.ref }}"
+                BASE_BRANCH="${{ github.event.pull_request.base.ref }}"
+                echo $BASE_BRANCH
 
                 # clear out the file content if already exist and retrive a list of open pull requests and write output to a file
                 > $OPEN_PR_FILE
