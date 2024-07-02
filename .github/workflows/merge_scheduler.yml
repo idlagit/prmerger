@@ -117,7 +117,8 @@ jobs:
                         fi
                     
                     else
-                            echo "***** Non Master Base Branch - Bypassing checks requirements for pull request #$pr_number"
+                            echo "Processing pull request #$pr_number: $pr_title"
+                            echo "***** Bypassing checks requirements on branch $base_branch_name"
                             echo $line >> $PASSED_PR_FILE
                     fi
                     
