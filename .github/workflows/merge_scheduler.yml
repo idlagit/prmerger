@@ -96,7 +96,6 @@ jobs:
 
                     # fetch base branch name
                     base_branch_name=$(gh pr view $pr_number -R $TARGET_REPO --json baseRefName | jq -r '.[]')
-                    echo "Base_Branch: $base_branch_name"
 
                     if [ $base_branch_name == "master" ]; then
                         
@@ -118,7 +117,7 @@ jobs:
                     
                     else
                             echo "Processing pull request #$pr_number: $pr_title"
-                            echo "***** Bypassing checks requirements on branch $base_branch_name"
+                            echo "***** Bypassing checks requirements for branch '$base_branch_name'"
                             echo $line >> $PASSED_PR_FILE
                     fi
                     
